@@ -294,10 +294,212 @@ export const listShapesTool: McpToolDefinition = {
   },
 };
 
+import type { BlendEndpoint, BlendSettings, BlendSpine } from "./blend/types.js";
+import { blendLayerType } from "./blend-layer.js";
+
+export const blendShapesTool: McpToolDefinition = {
+  name: "blend_shapes",
+  description:
+    "Create a shape blend layer: two shapes interpolated along a spine (color transitions, shape morphing, contour shading, neon glows).",
+  inputSchema: {
+    type: "object",
+    properties: {
+      startPath: {
+        description: 'Start shape: "circle", "rect", "triangle", "star-N", "polygon-N", or vertex array [{x,y}].',
+      },
+      startFill: { type: "string", description: "Start fill color (hex). Default #E63946." },
+      startStroke: { type: "string", description: "Start stroke color (hex)." },
+      startStrokeWidth: { type: "number", description: "Start stroke width." },
+      startOpacity: { type: "number", description: "Start opacity 0–1." },
+      startScale: { type: "number", description: "Start scale multiplier." },
+      startRotation: { type: "number", description: "Start rotation degrees." },
+      endPath: {
+        description: 'End shape: "circle", "rect", "triangle", "star-N", "polygon-N", or vertex array [{x,y}].',
+      },
+      endFill: { type: "string", description: "End fill color (hex). Default #457B9D." },
+      endStroke: { type: "string", description: "End stroke color (hex)." },
+      endStrokeWidth: { type: "number", description: "End stroke width." },
+      endOpacity: { type: "number", description: "End opacity 0–1." },
+      endScale: { type: "number", description: "End scale multiplier." },
+      endRotation: { type: "number", description: "End rotation degrees." },
+      mode: { type: "string", enum: ["steps", "distance", "smooth"], description: 'Blend mode. Default "steps".' },
+      steps: { type: "number", description: "Intermediate step count (steps mode). Default 10." },
+      distance: { type: "number", description: "Spacing in px between steps (distance mode). Default 20." },
+      easing: { type: "string", enum: ["linear", "ease-in", "ease-out", "ease-in-out"], description: "Easing function." },
+      spine: { type: "array", description: "Spine control points [{x,y}]. Omit for straight line." },
+      x: { type: "number", description: "Layer X position." },
+      y: { type: "number", description: "Layer Y position." },
+      width: { type: "number", description: "Layer width." },
+      height: { type: "number", description: "Layer height." },
+      interpolatePath: { type: "boolean", description: "Morph path geometry. Default true." },
+      interpolateFill: { type: "boolean", description: "Blend fill color. Default true." },
+      interpolateStroke: { type: "boolean", description: "Blend stroke color. Default true." },
+      interpolateOpacity: { type: "boolean", description: "Blend opacity. Default true." },
+      interpolateScale: { type: "boolean", description: "Blend scale. Default true." },
+      interpolateRotation: { type: "boolean", description: "Blend rotation. Default true." },
+      showEndpoints: { type: "boolean", description: "Include start/end shapes in output. Default true." },
+    },
+    required: ["startPath", "endPath"],
+  } satisfies JsonSchema,
+
+  async handler(input: Record<string, unknown>, context: McpToolContext): Promise<McpToolResult> {
+    const startEndpoint: BlendEndpoint = {
+      path: (input.startPath as BlendEndpoint["path"]) ?? "circle",
+      fill: (input.startFill as string) ?? "#E63946",
+      stroke: (input.startStroke as string | null) ?? null,
+      strokeWidth: (input.startStrokeWidth as number) ?? 0,
+      opacity: (input.startOpacity as number) ?? 1,
+      scale: (input.startScale as number) ?? 1,
+      rotation: (input.startRotation as number) ?? 0,
+    };
+    const endEndpoint: BlendEndpoint = {
+      path: (input.endPath as BlendEndpoint["path"]) ?? "circle",
+      fill: (input.endFill as string) ?? "#457B9D",
+      stroke: (input.endStroke as string | null) ?? null,
+      strokeWidth: (input.endStrokeWidth as number) ?? 0,
+      opacity: (input.endOpacity as number) ?? 1,
+      scale: (input.endScale as number) ?? 1,
+      rotation: (input.endRotation as number) ?? 0,
+    };
+
+    const spinePoints = input.spine as Array<{ x: number; y: number }> | undefined;
+    const spine: BlendSpine = spinePoints && spinePoints.length >= 2
+      ? { type: "path", points: spinePoints }
+      : { type: "straight" };
+
+    const defaults = blendLayerType.createDefault();
+    const properties: LayerProperties = {
+      ...defaults,
+      start: JSON.stringify(startEndpoint),
+      end: JSON.stringify(endEndpoint),
+      spine: JSON.stringify(spine),
+      mode: (input.mode as string) ?? "steps",
+      steps: (input.steps as number) ?? 10,
+      distance: (input.distance as number) ?? 20,
+      easing: (input.easing as string) ?? "linear",
+      interpolatePath: (input.interpolatePath as boolean) ?? true,
+      interpolateFill: (input.interpolateFill as boolean) ?? true,
+      interpolateStroke: (input.interpolateStroke as boolean) ?? true,
+      interpolateOpacity: (input.interpolateOpacity as boolean) ?? true,
+      interpolateScale: (input.interpolateScale as boolean) ?? true,
+      interpolateRotation: (input.interpolateRotation as boolean) ?? true,
+      showEndpoints: (input.showEndpoints as boolean) ?? true,
+    };
+
+    const id = generateLayerId();
+    const transform: LayerTransform = {
+      x: (input.x as number) ?? 0,
+      y: (input.y as number) ?? 0,
+      width: (input.width as number) ?? 600,
+      height: (input.height as number) ?? 200,
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      anchorX: 0.5,
+      anchorY: 0.5,
+    };
+
+    const layer: DesignLayer = {
+      id,
+      type: "shapes:blend",
+      name: "Shape Blend",
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: "normal",
+      transform,
+      properties,
+    };
+
+    context.layers.add(layer);
+    context.emitChange("layer-added");
+    return textResult(`Added shapes:blend layer '${id}'.`);
+  },
+};
+
+export const updateBlendTool: McpToolDefinition = {
+  name: "update_blend",
+  description: "Modify properties on an existing shapes:blend layer.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      layerId: { type: "string", description: "ID of the blend layer." },
+      steps: { type: "number" },
+      easing: { type: "string", enum: ["linear", "ease-in", "ease-out", "ease-in-out"] },
+      mode: { type: "string", enum: ["steps", "distance", "smooth"] },
+      spine: { description: 'Spine control points [{x,y}] or "straight".' },
+      startFill: { type: "string" },
+      endFill: { type: "string" },
+      startScale: { type: "number" },
+      endScale: { type: "number" },
+      startOpacity: { type: "number" },
+      endOpacity: { type: "number" },
+      startRotation: { type: "number" },
+      endRotation: { type: "number" },
+      interpolatePath: { type: "boolean" },
+      interpolateFill: { type: "boolean" },
+      showEndpoints: { type: "boolean" },
+    },
+    required: ["layerId"],
+  } satisfies JsonSchema,
+
+  async handler(input: Record<string, unknown>, context: McpToolContext): Promise<McpToolResult> {
+    const layerId = input.layerId as string;
+    const layer = context.layers.get(layerId);
+    if (!layer) return errorResult(`Layer '${layerId}' not found.`);
+    if (layer.type !== "shapes:blend")
+      return errorResult(`Layer '${layerId}' is not a shapes:blend layer.`);
+
+    const updates: Record<string, unknown> = {};
+
+    // Simple numeric/boolean properties
+    for (const key of ["steps", "easing", "mode", "interpolatePath", "interpolateFill", "showEndpoints"]) {
+      if (input[key] !== undefined) updates[key] = input[key];
+    }
+
+    // Start endpoint patches
+    if (input.startFill !== undefined || input.startScale !== undefined || input.startOpacity !== undefined || input.startRotation !== undefined) {
+      const start = JSON.parse(layer.properties.start as string) as BlendEndpoint;
+      if (input.startFill !== undefined) start.fill = input.startFill as string;
+      if (input.startScale !== undefined) start.scale = input.startScale as number;
+      if (input.startOpacity !== undefined) start.opacity = input.startOpacity as number;
+      if (input.startRotation !== undefined) start.rotation = input.startRotation as number;
+      updates.start = JSON.stringify(start);
+    }
+
+    // End endpoint patches
+    if (input.endFill !== undefined || input.endScale !== undefined || input.endOpacity !== undefined || input.endRotation !== undefined) {
+      const end = JSON.parse(layer.properties.end as string) as BlendEndpoint;
+      if (input.endFill !== undefined) end.fill = input.endFill as string;
+      if (input.endScale !== undefined) end.scale = input.endScale as number;
+      if (input.endOpacity !== undefined) end.opacity = input.endOpacity as number;
+      if (input.endRotation !== undefined) end.rotation = input.endRotation as number;
+      updates.end = JSON.stringify(end);
+    }
+
+    // Spine
+    if (input.spine !== undefined) {
+      if (input.spine === "straight") {
+        updates.spine = JSON.stringify({ type: "straight" });
+      } else {
+        const spinePoints = input.spine as Array<{ x: number; y: number }>;
+        updates.spine = JSON.stringify({ type: "path", points: spinePoints });
+      }
+    }
+
+    if (Object.keys(updates).length === 0) return errorResult("No properties to update.");
+    context.layers.updateProperties(layerId, updates as Partial<LayerProperties>);
+    context.emitChange("layer-updated");
+    return textResult(`Updated shapes:blend layer '${layerId}'.`);
+  },
+};
+
 export const shapeMcpTools: McpToolDefinition[] = [
   addShapeTool,
   setShapeStyleTool,
   setPolygonTool,
   addLineTool,
   listShapesTool,
+  blendShapesTool,
+  updateBlendTool,
 ];
