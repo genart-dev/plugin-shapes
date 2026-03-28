@@ -12,12 +12,15 @@ import { ellipseLayerType } from "./ellipse.js";
 import { lineLayerType } from "./line.js";
 import { polygonLayerType } from "./polygon.js";
 import { starLayerType } from "./star.js";
+import { arcLayerType } from "./arc.js";
+import { pathLayerType } from "./path.js";
 
 const SHAPE_TYPES = {
   rect: rectLayerType,
   ellipse: ellipseLayerType,
   polygon: polygonLayerType,
   star: starLayerType,
+  arc: arcLayerType,
 } as const;
 
 function textResult(text: string): McpToolResult {
@@ -35,13 +38,13 @@ function generateLayerId(): string {
 export const addShapeTool: McpToolDefinition = {
   name: "add_shape",
   description:
-    "Add a shape layer (rect, ellipse, polygon, or star) to the canvas.",
+    "Add a shape layer (rect, ellipse, polygon, star, or arc) to the canvas.",
   inputSchema: {
     type: "object",
     properties: {
       shape: {
         type: "string",
-        enum: ["rect", "ellipse", "polygon", "star"],
+        enum: ["rect", "ellipse", "polygon", "star", "arc"],
         description: "Shape type to add.",
       },
       x: { type: "number", description: "X position (default: 100)." },
@@ -494,11 +497,73 @@ export const updateBlendTool: McpToolDefinition = {
   },
 };
 
+export const addPathTool: McpToolDefinition = {
+  name: "add_path",
+  description: "Add a custom path shape layer using SVG path data (M, L, C, Q, Z commands).",
+  inputSchema: {
+    type: "object",
+    properties: {
+      d: { type: "string", description: 'SVG path data string (e.g. "M 10 10 L 90 10 L 90 90 Z").' },
+      scaleToFit: { type: "boolean", description: "Scale path to fill layer bounds (default: true)." },
+      fillColor: { type: "string", description: 'Fill color hex (default: "#ffffff").' },
+      strokeColor: { type: "string", description: 'Stroke color hex (default: "#000000").' },
+      strokeWidth: { type: "number", description: "Stroke width in px (default: 0)." },
+      x: { type: "number" },
+      y: { type: "number" },
+      width: { type: "number" },
+      height: { type: "number" },
+      layerName: { type: "string" },
+    },
+    required: ["d"],
+  } satisfies JsonSchema,
+
+  async handler(input: Record<string, unknown>, context: McpToolContext): Promise<McpToolResult> {
+    const d = input.d as string;
+    if (!d || !d.trim()) return errorResult("Path data (d) is required.");
+
+    const properties: LayerProperties = {
+      ...pathLayerType.createDefault(),
+      d,
+    };
+    if (input.scaleToFit !== undefined) properties.scaleToFit = input.scaleToFit as boolean;
+    if (input.fillColor !== undefined) properties.fillColor = input.fillColor as string;
+    if (input.strokeColor !== undefined) properties.strokeColor = input.strokeColor as string;
+    if (input.strokeWidth !== undefined) {
+      properties.strokeWidth = input.strokeWidth as number;
+      properties.strokeEnabled = true;
+    }
+
+    const transform: LayerTransform = {
+      x: (input.x as number) ?? 0,
+      y: (input.y as number) ?? 0,
+      width: (input.width as number) ?? context.canvasWidth,
+      height: (input.height as number) ?? context.canvasHeight,
+      rotation: 0, scaleX: 1, scaleY: 1, anchorX: 0.5, anchorY: 0.5,
+    };
+
+    const layer: DesignLayer = {
+      id: generateLayerId(),
+      type: "shapes:path",
+      name: (input.layerName as string) ?? "Path",
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: "normal",
+      transform,
+      properties,
+    };
+    context.layers.add(layer);
+    context.emitChange("layer-added");
+    return textResult(`Added path layer '${layer.id}'.`);
+  },
+};
+
 export const shapeMcpTools: McpToolDefinition[] = [
   addShapeTool,
   setShapeStyleTool,
   setPolygonTool,
   addLineTool,
+  addPathTool,
   listShapesTool,
   blendShapesTool,
   updateBlendTool,

@@ -51,8 +51,8 @@ describe("shapes plugin", () => {
   it("exports a valid DesignPlugin", () => {
     expect(shapesPlugin.id).toBe("shapes");
     expect(shapesPlugin.tier).toBe("free");
-    expect(shapesPlugin.layerTypes).toHaveLength(6);
-    expect(shapesPlugin.mcpTools).toHaveLength(7);
+    expect(shapesPlugin.layerTypes).toHaveLength(8);
+    expect(shapesPlugin.mcpTools).toHaveLength(8);
   });
 
   it("all layer types have unique typeIds", () => {

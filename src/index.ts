@@ -5,6 +5,8 @@ import { lineLayerType } from "./line.js";
 import { polygonLayerType } from "./polygon.js";
 import { starLayerType } from "./star.js";
 import { blendLayerType } from "./blend-layer.js";
+import { arcLayerType } from "./arc.js";
+import { pathLayerType } from "./path.js";
 import { shapeMcpTools } from "./shape-tools.js";
 
 const shapesPlugin: DesignPlugin = {
@@ -12,7 +14,7 @@ const shapesPlugin: DesignPlugin = {
   name: "Shapes",
   version: "0.2.0",
   tier: "free",
-  description: "Shape layers: rectangle, ellipse, line, polygon, star, blend.",
+  description: "Shape layers: rectangle, ellipse, line, polygon, star, blend, arc/sector, path.",
 
   layerTypes: [
     rectLayerType,
@@ -21,6 +23,8 @@ const shapesPlugin: DesignPlugin = {
     polygonLayerType,
     starLayerType,
     blendLayerType,
+    arcLayerType,
+    pathLayerType,
   ],
   tools: [],
   exportHandlers: [],
@@ -42,5 +46,7 @@ export { lineLayerType } from "./line.js";
 export { polygonLayerType } from "./polygon.js";
 export { starLayerType } from "./star.js";
 export { blendLayerType } from "./blend-layer.js";
+export { arcLayerType } from "./arc.js";
+export { pathLayerType } from "./path.js";
 export { shapeMcpTools, blendShapesTool, updateBlendTool } from "./shape-tools.js";
 export type { BlendEndpoint, BlendSettings, BlendSpine } from "./blend/types.js";
