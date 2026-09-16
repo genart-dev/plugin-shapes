@@ -69,6 +69,9 @@ export function starPoints(
 
 export const starLayerType: LayerTypeDefinition = {
   typeId: "shapes:star",
+  // Its geometry comes from the bounds and its ratios are unitless, so it
+  // draws at the canvas's own resolution (ADR 111).
+  resolution: "device",
   displayName: "Star",
   icon: "star",
   category: "shape",
@@ -106,7 +109,7 @@ export const starLayerType: LayerTypeDefinition = {
     }
     ctx.closePath();
 
-    applyShapeStyle(properties, ctx);
+    applyShapeStyle(properties, ctx, bounds.scale ?? 1);
     ctx.restore();
   },
 

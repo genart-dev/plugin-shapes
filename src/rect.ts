@@ -24,6 +24,8 @@ const RECT_PROPERTIES: LayerPropertySchema[] = [
 
 export const rectLayerType: LayerTypeDefinition = {
   typeId: "shapes:rect",
+  // Draws at the canvas's own resolution (ADR 111).
+  resolution: "device",
   displayName: "Rectangle",
   icon: "square",
   category: "shape",
@@ -44,7 +46,10 @@ export const rectLayerType: LayerTypeDefinition = {
     bounds: LayerBounds,
     _resources: RenderResources,
   ): void {
-    const cornerRadius = (properties.cornerRadius as number) ?? 0;
+    // Device pixels per layout unit (ADR 111): the corner radius is a length,
+    // the rectangle itself comes from the bounds.
+    const dsc = bounds.scale ?? 1;
+    const cornerRadius = ((properties.cornerRadius as number) ?? 0) * dsc;
 
     ctx.save();
     ctx.beginPath();
@@ -56,7 +61,7 @@ export const rectLayerType: LayerTypeDefinition = {
       ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
-    applyShapeStyle(properties, ctx);
+    applyShapeStyle(properties, ctx, bounds.scale ?? 1);
     ctx.restore();
   },
 

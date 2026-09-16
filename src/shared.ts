@@ -46,6 +46,8 @@ export const COMMON_SHAPE_PROPERTIES: LayerPropertySchema[] = [
 export function applyShapeStyle(
   properties: LayerProperties,
   ctx: CanvasRenderingContext2D,
+  /** Device pixels per layout unit (ADR 111). The stroke width is a length. */
+  scale = 1,
 ): void {
   const fillEnabled = (properties.fillEnabled as boolean) ?? true;
   const strokeEnabled = (properties.strokeEnabled as boolean) ?? false;
@@ -59,7 +61,7 @@ export function applyShapeStyle(
     const strokeWidth = (properties.strokeWidth as number) ?? 0;
     if (strokeWidth > 0) {
       ctx.strokeStyle = (properties.strokeColor as string) ?? "#000000";
-      ctx.lineWidth = strokeWidth;
+      ctx.lineWidth = strokeWidth * scale;
       ctx.stroke();
     }
   }

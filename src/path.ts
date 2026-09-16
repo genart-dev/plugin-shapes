@@ -79,7 +79,11 @@ function drawPath(ctx: CanvasRenderingContext2D, d: string, bounds: LayerBounds,
   // Compute transform
   const pathW = maxX - minX || 1;
   const pathH = maxY - minY || 1;
-  let sx = 1, sy = 1, tx = bounds.x, ty = bounds.y;
+  // Device pixels per layout unit (ADR 111). With scaleToFit the path box is
+  // mapped onto the bounds, which already carry the scale; without it the
+  // path's own coordinates are in layout units and are scaled here.
+  const dsc = bounds.scale ?? 1;
+  let sx = dsc, sy = dsc, tx = bounds.x, ty = bounds.y;
 
   if (scaleToFit && isFinite(minX)) {
     sx = bounds.width / pathW;
@@ -129,6 +133,8 @@ function drawPath(ctx: CanvasRenderingContext2D, d: string, bounds: LayerBounds,
 
 export const pathLayerType: LayerTypeDefinition = {
   typeId: "shapes:path",
+  // Draws at the canvas's own resolution (ADR 111).
+  resolution: "device",
   displayName: "Path",
   icon: "path",
   category: "shape",
@@ -156,7 +162,7 @@ export const pathLayerType: LayerTypeDefinition = {
 
     ctx.save();
     drawPath(ctx, d, bounds, scaleToFit);
-    applyShapeStyle(properties, ctx);
+    applyShapeStyle(properties, ctx, bounds.scale ?? 1);
     ctx.restore();
   },
 

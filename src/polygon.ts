@@ -56,6 +56,9 @@ export function polygonPoints(
 
 export const polygonLayerType: LayerTypeDefinition = {
   typeId: "shapes:polygon",
+  // Its geometry comes from the bounds and its ratios are unitless, so it
+  // draws at the canvas's own resolution (ADR 111).
+  resolution: "device",
   displayName: "Polygon",
   icon: "hexagon",
   category: "shape",
@@ -92,7 +95,7 @@ export const polygonLayerType: LayerTypeDefinition = {
     }
     ctx.closePath();
 
-    applyShapeStyle(properties, ctx);
+    applyShapeStyle(properties, ctx, bounds.scale ?? 1);
     ctx.restore();
   },
 

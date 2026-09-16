@@ -51,6 +51,9 @@ const ARC_PROPERTIES: LayerPropertySchema[] = [
 
 export const arcLayerType: LayerTypeDefinition = {
   typeId: "shapes:arc",
+  // Its geometry comes from the bounds and its ratios are unitless, so it
+  // draws at the canvas's own resolution (ADR 111).
+  resolution: "device",
   displayName: "Arc / Sector",
   icon: "arc",
   category: "shape",
@@ -99,7 +102,7 @@ export const arcLayerType: LayerTypeDefinition = {
       if (closePath) ctx.closePath();
     }
 
-    applyShapeStyle(properties, ctx);
+    applyShapeStyle(properties, ctx, bounds.scale ?? 1);
     ctx.restore();
   },
 

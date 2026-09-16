@@ -48,6 +48,8 @@ const LINE_PROPERTIES: LayerPropertySchema[] = [
 
 export const lineLayerType: LayerTypeDefinition = {
   typeId: "shapes:line",
+  // Draws at the canvas's own resolution (ADR 111).
+  resolution: "device",
   displayName: "Line",
   icon: "minus",
   category: "shape",
@@ -68,8 +70,11 @@ export const lineLayerType: LayerTypeDefinition = {
     bounds: LayerBounds,
     _resources: RenderResources,
   ): void {
+    // Device pixels per layout unit (ADR 111): the width and the dash pattern
+    // are lengths, the line's ends come from the bounds.
+    const dsc = bounds.scale ?? 1;
     const color = (properties.strokeColor as string) ?? "#ffffff";
-    const width = (properties.strokeWidth as number) ?? 2;
+    const width = ((properties.strokeWidth as number) ?? 2) * dsc;
     const cap = (properties.lineCap as string) ?? "round";
     const dashStr = (properties.dashPattern as string) ?? "";
 
@@ -84,7 +89,7 @@ export const lineLayerType: LayerTypeDefinition = {
     ctx.lineCap = cap as CanvasLineCap;
 
     if (dashStr) {
-      const dashes = dashStr.split(",").map(Number).filter((n) => !isNaN(n) && n > 0);
+      const dashes = dashStr.split(",").map(Number).filter((n) => !isNaN(n) && n > 0).map((n) => n * dsc);
       if (dashes.length > 0) ctx.setLineDash(dashes);
     }
 

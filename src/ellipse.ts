@@ -9,6 +9,9 @@ import { applyShapeStyle, COMMON_SHAPE_PROPERTIES } from "./shared.js";
 
 export const ellipseLayerType: LayerTypeDefinition = {
   typeId: "shapes:ellipse",
+  // Its geometry comes from the bounds and its ratios are unitless, so it
+  // draws at the canvas's own resolution (ADR 111).
+  resolution: "device",
   displayName: "Ellipse",
   icon: "circle",
   category: "shape",
@@ -37,7 +40,7 @@ export const ellipseLayerType: LayerTypeDefinition = {
     ctx.save();
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-    applyShapeStyle(properties, ctx);
+    applyShapeStyle(properties, ctx, bounds.scale ?? 1);
     ctx.restore();
   },
 
