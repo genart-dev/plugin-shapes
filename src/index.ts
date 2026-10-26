@@ -12,7 +12,7 @@ import { shapeMcpTools } from "./shape-tools.js";
 const shapesPlugin: DesignPlugin = {
   id: "shapes",
   name: "Shapes",
-  version: "0.2.0",
+  version: "0.3.0",
   tier: "free",
   description: "Shape layers: rectangle, ellipse, line, polygon, star, blend, arc/sector, path.",
 
